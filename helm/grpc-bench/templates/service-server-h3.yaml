@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "grpc-bench.fullname" . }}-server-h3
+  labels:
+    {{- include "grpc-bench.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server-h3
+spec:
+  type: {{ .Values.servers.h3.service.type | default "NodePort" }}
+  selector:
+    {{- include "grpc-bench.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: server-h3
+  ports:
+    - name: h3
+      port: {{ .Values.servers.h3.service.port }}
+      targetPort: h3
+      protocol: UDP
+      {{- if and (eq .Values.servers.h3.service.type "NodePort") .Values.servers.h3.service.nodePort }}
+      nodePort: {{ .Values.servers.h3.service.nodePort }}
+      {{- end }}

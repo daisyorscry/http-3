@@ -1,0 +1,40 @@
+@startuml
+
+skinparam rectangleStyle rounded
+
+actor "Benchmark Controller" as controller
+rectangle "Load Generator" as load {
+  component "Scenario Executor" as executor
+  component "Latency Recorder" as recorder
+}
+
+rectangle "Network Emulator (tc/netem)" as netem
+
+rectangle "Server Environment" as server {
+  component "gRPC Service Logic\n(Identical Codebase)" as service
+  component "HTTP/2 Stack\n(TCP + TLS1.3 + HPACK)" as h2
+  component "HTTP/3 Stack\n(QUIC + TLS1.3 + QPACK)" as h3
+}
+
+database "Metrics Storage\n(CSV/Time-series)" as db
+
+controller --> executor : Select Protocol & Scenario
+executor --> recorder : Record timestamps
+
+executor --> netem : Routed Test Traffic
+netem --> h2 : Request (when mode=H2)
+netem --> h3 : Request (when mode=H3)
+
+h2 --> service : Unary RPC Call
+h3 --> service : Unary RPC Call
+
+service --> recorder : Response (latency measurement)
+recorder --> db : Persist raw metrics
+
+note bottom of server
+Only one stack is active per test mode.
+Code, payload, TLS config remain identical.
+Only transport differs.
+end note
+
+@enduml

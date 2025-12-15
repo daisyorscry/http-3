@@ -1,0 +1,13 @@
+apiVersion: v2
+name: grpc-bench
+description: Benchmark stack (dashboard, HTTP/2, HTTP/3)
+type: application
+version: 0.1.1
+appVersion: "0.1.1"
+kubeVersion: ">=1.22.0-0"
+keywords:
+  - grpc
+  - http2
+  - http3
+  - quic
+

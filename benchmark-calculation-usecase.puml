@@ -1,0 +1,34 @@
+@startuml
+skinparam monochrome true
+left to right direction
+
+actor Operator
+actor "Benchmark Targets" as Targets
+
+rectangle "Dashboard UI" as UI {
+  usecase "Configure scenario\n& run benchmark" as UC_Run
+}
+
+rectangle "Dashboard API" as API {
+  usecase "Handle request &\nspawn Go client" as UC_API
+  usecase "Parse CSV &\nreturn summary" as UC_Parse
+}
+
+rectangle "Go Benchmark Client" as Client {
+  usecase "Generate load for H2/H3" as UC_Load
+  usecase "Record samples\n& compute summary" as UC_Summary
+  usecase "Write CSV" as UC_CSV
+}
+
+Operator --> UC_Run
+UC_Run --> UC_API
+UC_API --> UC_Load
+UC_Load --> Targets
+UC_Load --> UC_Summary
+UC_Summary --> UC_CSV
+UC_CSV --> UC_Parse
+UC_Parse --> Operator
+
+UC_Parse ..> UC_Summary : "Same data & formulas"
+
+@enduml

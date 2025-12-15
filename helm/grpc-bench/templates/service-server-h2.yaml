@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "grpc-bench.fullname" . }}-server-h2
+  labels:
+    {{- include "grpc-bench.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server-h2
+spec:
+  type: {{ .Values.servers.h2.service.type | default "NodePort" }}
+  selector:
+    {{- include "grpc-bench.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: server-h2
+  ports:
+    - name: h2
+      port: {{ .Values.servers.h2.service.port }}
+      targetPort: h2
+      protocol: TCP
+      {{- if and (eq .Values.servers.h2.service.type "NodePort") .Values.servers.h2.service.nodePort }}
+      nodePort: {{ .Values.servers.h2.service.nodePort }}
+      {{- end }}

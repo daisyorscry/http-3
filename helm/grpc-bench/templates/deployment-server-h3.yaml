@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "grpc-bench.fullname" . }}-server-h3
+  labels:
+    {{- include "grpc-bench.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server-h3
+spec:
+  replicas: {{ .Values.servers.h3.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "grpc-bench.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: server-h3
+  template:
+    metadata:
+      labels:
+        {{- include "grpc-bench.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: server-h3
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: server-h3
+          image: {{ .Values.image.serverH3 | quote }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: h3
+              containerPort: {{ .Values.servers.h3.service.port }}
+              protocol: UDP
+          env:
+            {{- with .Values.servers.h3.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.servers.h3.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

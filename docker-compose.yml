@@ -1,0 +1,133 @@
+name: grpc-bench
+
+networks:
+  bench:
+    driver: bridge
+
+volumes:
+  dashboard-data:
+
+services:
+  # ===== HTTP/2 Server =====
+  server-h2:
+    build:
+      context: .
+      dockerfile: cmd/server-h2/Dockerfile
+    container_name: grpc-bench-server-h2
+    environment:
+      - ADDR=:8444
+      - GOMAXPROCS=1
+      - GOMEMLIMIT=2GiB
+      - GOGC=80
+    volumes:
+      - ./cert:/app/cert:ro
+    ports:
+      - "8444:8444/tcp"
+    mem_limit: 2g
+    cpus: "1.0"
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    restart: unless-stopped
+    networks:
+      - bench
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ===== HTTP/3 Server =====
+  server-h3:
+    build:
+      context: .
+      dockerfile: cmd/server-h3/Dockerfile
+    container_name: grpc-bench-server-h3
+    environment:
+      - ADDR=:8443
+      - GOMAXPROCS=1
+      - GOMEMLIMIT=2GiB
+      - GOGC=80
+    volumes:
+      - ./cert:/app/cert:ro
+    ports:
+      - "8443:8443/udp"
+    mem_limit: 2g
+    cpus: "1.0"
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    sysctls:
+      net.ipv4.udp_rmem_min: "4096"
+      net.ipv4.udp_wmem_min: "4096"
+      net.ipv4.ip_local_port_range: "1024 65535"
+    restart: unless-stopped
+    networks:
+      - bench
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ===== Dashboard UI =====
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard-new/Dockerfile
+    container_name: grpc-bench-dashboard
+    environment:
+      - H2_ADDR=https://server-h2:8444
+      - H3_ADDR=https://server-h3:8443
+      - NODE_ENV=production
+    depends_on:
+      server-h2:
+        condition: service_healthy
+      server-h3:
+        condition: service_healthy
+    ports:
+      - "5000:3000"
+    volumes:
+      - dashboard-data:/app/data
+    mem_limit: 1g
+    cpus: "1.0"
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    restart: unless-stopped
+    networks:
+      - bench
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ===== Benchmark Clients (All Scenarios) =====
+  # Image ini berisi semua client binaries (10 scenarios)
+  # Tidak auto-start, hanya available untuk manual execution
+  bench-clients:
+    build:
+      context: .
+      dockerfile: Dockerfile.clients
+    container_name: grpc-bench-clients
+    depends_on:
+      server-h2:
+        condition: service_healthy
+      server-h3:
+        condition: service_healthy
+    environment:
+      - H2_ADDR=https://server-h2:8444
+      - H3_ADDR=https://server-h3:8443
+    volumes:
+      - ./results:/app/results
+    networks:
+      - bench
+    profiles:
+      - manual
+    # Contoh usage:
+    # docker-compose run --rm bench-clients bench-client -h3 -addr https://server-h3:8443
+    # docker-compose run --rm bench-clients bench-header-bloat -h3=false -addr https://server-h2:8444

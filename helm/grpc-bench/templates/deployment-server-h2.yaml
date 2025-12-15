@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "grpc-bench.fullname" . }}-server-h2
+  labels:
+    {{- include "grpc-bench.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server-h2
+spec:
+  replicas: {{ .Values.servers.h2.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "grpc-bench.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: server-h2
+  template:
+    metadata:
+      labels:
+        {{- include "grpc-bench.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: server-h2
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: server-h2
+          image: {{ .Values.image.serverH2 | quote }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: h2
+              containerPort: {{ .Values.servers.h2.service.port }}
+              protocol: TCP
+          env:
+            {{- with .Values.servers.h2.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          readinessProbe:
+            tcpSocket:
+              port: h2
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: h2
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          {{- with .Values.servers.h2.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

@@ -1,0 +1,91 @@
+# --- Registry auth (jika Harbor private) ---
+imagePullSecrets:
+  - name: harbor-cred
+
+# --- Images (Harbor) ---
+image:
+  dashboard: harbor.sahabatlaundry.id/grpc-bench/grpc-bench-dashboard:0.1.0
+  serverH2: harbor.sahabatlaundry.id/grpc-bench/grpc-bench-server-h2:0.1.0
+  serverH3: harbor.sahabatlaundry.id/grpc-bench/grpc-bench-server-h3:0.1.0
+
+# --- ServiceAccount (default pakai default SA) ---
+serviceAccount:
+  create: false
+  name: ""
+
+# --- Dashboard ---
+dashboard:
+  replicaCount: 1
+  env: []  # tambahkan env tambahan di sini jika perlu
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  service:
+    type: NodePort
+    port: 5000
+    nodePort: 30050
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: dashboard.local
+        path: /
+    tls: []  # contoh: [{ hosts: [dashboard.local], secretName: dashboard-tls }]
+
+# --- Servers ---
+servers:
+  h2:
+    replicaCount: 1
+    env:
+      - name: ADDR
+        value: ":8444"
+      - name: TLS_CERT_FILE
+        value: "/app/certs/dev.crt"
+      - name: TLS_KEY_FILE
+        value: "/app/certs/dev.key"
+    resources:
+      requests:
+        cpu: "1"
+        memory: "1Gi"
+      limits:
+        cpu: "2"
+        memory: "2Gi"
+    service:
+      type: NodePort
+      port: 8444
+      nodePort: 30444
+      protocol: TCP
+
+  h3:
+    replicaCount: 1
+    env:
+      - name: ADDR
+        value: ":8443"
+      - name: TLS_CERT_FILE
+        value: "/app/certs/dev.crt"
+      - name: TLS_KEY_FILE
+        value: "/app/certs/dev.key"
+    resources:
+      requests:
+        cpu: "1"
+        memory: "1Gi"
+      limits:
+        cpu: "2"
+        memory: "2Gi"
+    service:
+      type: NodePort
+      port: 8443
+      nodePort: 30443
+      protocol: UDP
+
+# --- Certs (dibundel di image; tidak pakai Secret) ---
+certs:
+  createSecret: false
+  name: grpc-bench-certs
+  crt: ""
+  key: ""

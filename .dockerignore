@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+docs/
+*.puml
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Build artifacts
+bin/
+results/
+*.csv
+*.html
+
+# Node modules (akan di-copy per service)
+node_modules/
+npm-debug.log
+.npm
+
+# Dashboard specific (jangan ignore di dashboard build)
+# dashboard-new/node_modules
+# dashboard-new/.svelte-kit
+# dashboard-new/build
+
+# Python
+*.pyc
+__pycache__/
+*.py
+venv/
+.python-version
+
+# Temp files
+tmp/
+temp/
+*.tmp
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test data
+test-data/
+
+# Helm charts
+helm/
+
+# Docker
+docker-compose.yml
+Dockerfile*
+.dockerignore

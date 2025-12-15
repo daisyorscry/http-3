@@ -1,0 +1,65 @@
+@startuml HTTP2_vs_HTTP3_Benchmark_Platform
+
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Client Scenario" as client
+actor "Engineer" as engineer
+
+rectangle "Benchmark Platform" {
+  usecase "Benchmark REST API" as api
+  usecase "Review Historical Trends" as history
+  usecase "Configure Scenario" as config
+  usecase "Show Results Dashboard" as dashboard
+  usecase "Run H2 vs H3 Comparison" as comparison
+  usecase "Stream Live Logs" as logs
+  usecase "Persist Run Summary" as persist
+}
+
+rectangle "HTTP/2 Service" as h2
+rectangle "HTTP/3 Service" as h3
+database "Metrics Store" as db
+
+' Client Scenario relationships
+client --> api
+client --> comparison
+
+' Engineer relationships
+engineer --> history
+engineer --> config
+engineer --> dashboard
+
+' Include relationships
+comparison .> logs : <<include>>
+comparison .> persist : <<include>>
+api .> comparison : <<include>>
+
+' Traffic flow
+comparison --> h2 : sends benchmark traffic
+comparison --> h3 : sends benchmark traffic
+
+' Data persistence
+h2 --> db : write summaries
+h3 --> db : write summaries
+persist --> db : write summaries
+
+' History read
+history --> db : read history
+
+note right of comparison
+  Core orchestration use case:
+  - Selects scenario configuration
+  - Runs benchmarks on both protocols
+  - Streams live progress to UI
+  - Persists metrics to store
+end note
+
+note bottom of db
+  SQLite database storing:
+  - Run metadata (scenario, timestamp)
+  - Protocol results (H2 & H3)
+  - Latency percentiles (P50, P90, P95, P99)
+  - Throughput metrics (RPS, duration)
+end note
+
+@enduml

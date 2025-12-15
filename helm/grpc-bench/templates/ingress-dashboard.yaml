@@ -1,0 +1,40 @@
+{{- if .Values.dashboard.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "grpc-bench.fullname" . }}-dashboard
+  labels:
+    {{- include "grpc-bench.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dashboard
+  {{- with .Values.dashboard.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.dashboard.ingress.className }}
+  ingressClassName: {{ .Values.dashboard.ingress.className }}
+  {{- end }}
+  {{- if .Values.dashboard.ingress.tls }}
+  tls:
+    {{- range .Values.dashboard.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName | default (printf "%s-dashboard-tls" (include "grpc-bench.fullname" $)) }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.dashboard.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          - path: {{ .path | default "/" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "grpc-bench.fullname" $ }}-dashboard
+                port:
+                  number: {{ $.Values.dashboard.service.port }}
+    {{- end }}
+{{- end }}

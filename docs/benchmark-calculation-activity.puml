@@ -1,0 +1,45 @@
+@startuml
+skinparam monochrome true
+skinparam activity {
+  BackgroundColor white
+  BorderColor black
+}
+
+title Benchmark Summary Calculation Flow
+
+start
+:Load CSV rows (ts_unix_ns, latency_ns, ok);
+:Convert latency_ns -> milliseconds;
+:Collect timestamps & OK flags;
+if (records empty?) then (yes)
+  :Return default summary
+  (zeros);
+  stop
+else (no)
+  :Sort latency array ascending;
+  :Find min/max timestamp iteratively;
+  :Compute durationS = (maxTS - minTS) / 1e9;
+  :Sum all latencies to get mean;
+  :Pick min/max latency from sorted array;
+  :Calculate percentiles via linear interpolation
+    (P50, P90, P95, P99);
+  :Count OK samples;
+  :Derive metrics object;
+endif
+:Return BenchmarkSummary;
+stop
+
+note right
+Formulas (sesuai `summarize()` Go & `calculateSummary()` TS):
+* Samples = N (jumlah baris).
+* OKRatePct = (OK_count / N) * 100.
+* DurationS = max(ts) - min(ts) / 1e9 detik.
+* RPS = N / max(DurationS, 1).
+* Meanms = (Σ latency_ms) / N.
+* Percentile(p) = lat[i] + frac * (lat[i+1]-lat[i]),
+  dengan pos = p * (N-1), i = floor(pos), frac = pos - i.
+* Minms = latency_ms[0], Maxms = latency_ms[N-1]
+  (setelah sort).
+
+end note
+@enduml
