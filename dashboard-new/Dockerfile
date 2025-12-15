@@ -50,10 +50,13 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# Install build dependencies for better-sqlite3
+RUN apk add --no-cache python3 make g++
+
 # App build hasil adapter-node akan di ./build
 COPY --from=build-dashboard /app/build ./build
 COPY --from=build-dashboard /app/package*.json ./
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm ci --omit=dev
 
 # Copy ALL benchmark binaries to PATH
 COPY --from=bench-client /out/bench-client /usr/local/bin/bench-client
